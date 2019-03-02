@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 from sqlalchemy.types import SmallInteger, Integer, BigInteger
+from IPython.display import HTML, display
 
 def to_csv_with_types(df, filename):
     """
@@ -18,6 +19,7 @@ def to_csv_with_types(df, filename):
 
     dtypes.to_csv(filename_types, index=False)
     df.to_csv(filename, index=False)
+
 
 def from_csv_with_types(filename, nrows=None):
     """
@@ -38,9 +40,10 @@ def from_csv_with_types(filename, nrows=None):
 
     return pd.read_csv(filename, parse_dates=dates, dtype=dtypes, nrows=nrows)
 
-def optimize_df_dtypes(df, cutoff=0.05):
+
+def optimize_df_dtypes(df, cutoff=0.10, ignore=None):
     """
-    Downcasts DataFrame Column Types to fit the data.
+    Downcasts DataFrame Column Types.
 
     :param df:
     Dataframe to optimize.
@@ -48,26 +51,44 @@ def optimize_df_dtypes(df, cutoff=0.05):
     :param cutoff:
     Specifies cutoff ratio of unique values to rows for converting to categories.
 
+    :param ignore
+    Specifies which fields to exclude from downcasting.
+
     :return:
     Optimized DataFrame.
     """
 
     df = df.copy()
 
-    # int64 -> smallest uint allowed by data
-    df_int = df.select_dtypes(include=[np.int])
-    df_int = df_int.apply(pd.to_numeric, downcast='unsigned')
-    df[df_int.columns] = df_int
+    # columns to consider for downcasting
+    process_cols = df.columns
+    if ignore and len(ignore) > 0:
+        process_cols = df.columns.difference(ignore)
 
-    # object -> category, if less than 5% of values are unique
-    df_obj = df.select_dtypes(include=['object'])
-    s = df_obj.nunique() / df.shape[0]
-    columns = s.index[s <= cutoff].values
-    if len(columns) > 0:
-        df_cat = df[columns].astype('category')
-        df[columns] = df_cat
+        if len(process_cols) == 0:
+            return df
+
+    # get the integer columns, if any
+    df_int = df[process_cols].select_dtypes(include=[np.int])
+
+    # if there are some integer columns, downcast them
+    if len(df_int.columns) > 0:
+        df_int = df_int.apply(pd.to_numeric, downcast='unsigned')
+        df[df_int.columns] = df_int
+
+    # get the object columns, if any
+    df_obj = df[process_cols].select_dtypes(include=['object'])
+
+    # if there are some object columns, convert to category if less than 20% unique
+    if len(df_obj.columns) > 0:
+        s = df_obj.nunique() / df.shape[0]
+        columns = s.index[s <= cutoff].values
+        if len(columns) > 0:
+            df_cat = df[columns].astype('category')
+            df[columns] = df_cat
 
     return df
+
 
 def optimize_db_dtypes(df):
     """
@@ -89,15 +110,12 @@ def optimize_db_dtypes(df):
 
     return dtypes
 
-def is_unique(df, cols):
-    """Fast determination of multi-column uniqueness."""
-    return not (df.duplicated(subset=cols)).any()
-
 def mem_usage(df):
     """Returns a string representing df memory usage in MB."""
     mem = df.memory_usage(deep=True).sum()
-    mem = mem / 2 ** 20 # covert to megabytes
+    mem = mem / 2 ** 20  # covert to megabytes
     return f'{mem:03.2f} MB'
+
 
 def is_int(s):
     """Returns True if all non-null values are integers.
@@ -106,8 +124,9 @@ def is_int(s):
     float just to hold missing values.
     """
     notnull = s.notnull()
-    is_integer = s.apply(lambda x: (x%1 == 0.0))
+    is_integer = s.apply(lambda x: (x % 1 == 0.0))
     return (notnull == is_integer).all()
+
 
 def convert_camel_case(name):
     """
@@ -118,3 +137,12 @@ def convert_camel_case(name):
     """
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+def is_unique(df, cols):
+    """Fast determination of multi-column uniqueness."""
+    return not (df.duplicated(subset=cols)).any()
+
+def game_id_to_url(game_id):
+    home = game_id[:3]
+    url = 'https://www.baseball-reference.com/boxes/' + home + '/' + game_id + '.shtml'
+    display(HTML(f'<a href="{url}">{game_id}</a>'))
