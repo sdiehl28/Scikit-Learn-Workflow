@@ -95,7 +95,7 @@ def optimize_df_dtypes(df, ignore=None):
 
 def optimize_db_dtypes(df):
     """
-    Choose smallest ANSI SQL Column Type that fits the optimized DataFrame.
+    Choose smallest ANSI SQL Column Type for integer that fits the optimized DataFrame.
 
     Relies on:
     from sqlalchemy.types import SmallInteger, Integer, BigInteger
