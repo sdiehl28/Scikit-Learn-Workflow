@@ -41,7 +41,7 @@ def from_csv_with_types(filename, nrows=None):
     return pd.read_csv(filename, parse_dates=dates, dtype=dtypes, nrows=nrows)
 
 
-def optimize_df_dtypes(df, cutoff=0.10, ignore=None):
+def optimize_df_dtypes(df, ignore=None):
     """
     Downcasts DataFrame Column Types.
 
@@ -76,16 +76,19 @@ def optimize_df_dtypes(df, cutoff=0.10, ignore=None):
         df_int = df_int.apply(pd.to_numeric, downcast='unsigned')
         df[df_int.columns] = df_int
 
-    # get the object columns, if any
-    df_obj = df[process_cols].select_dtypes(include=['object'])
+    # automated conversion to categories can be problematic
+    # if a category is warranted, probably a CategoryDType should be created
 
-    # if there are some object columns, convert to category if less than 20% unique
-    if len(df_obj.columns) > 0:
-        s = df_obj.nunique() / df.shape[0]
-        columns = s.index[s <= cutoff].values
-        if len(columns) > 0:
-            df_cat = df[columns].astype('category')
-            df[columns] = df_cat
+    # get the object columns, if any
+    # df_obj = df[process_cols].select_dtypes(include=['object'])
+    #
+    # # if there are some object columns, convert to category if less than 10% unique
+    # if len(df_obj.columns) > 0:
+    #     s = df_obj.nunique() / df.shape[0]
+    #     columns = s.index[s <= cutoff].values
+    #     if len(columns) > 0:
+    #         df_cat = df[columns].astype('category')
+    #         df[columns] = df_cat
 
     return df
 
