@@ -149,3 +149,9 @@ def game_id_to_url(game_id):
     home = game_id[:3]
     url = 'https://www.baseball-reference.com/boxes/' + home + '/' + game_id + '.shtml'
     display(HTML(f'<a href="{url}">{game_id}</a>'))
+
+def order_cols(df,cols):
+    """Put columns in cols first, followed by rest of columns"""
+    rest = [col for col in df.columns if col not in cols]
+    df = df[cols + rest]
+    return df
