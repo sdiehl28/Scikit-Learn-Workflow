@@ -25,10 +25,10 @@ def print_scores(scores):
 
 
 def print_grid(grid, pandas=False):
-    """Print Best and Optionally Return GridSearchCV Results in DataFrame"""
+    """Print Best and Return Results in a DataFrame"""
 
-    std = grid.cv_results_['std_test_score'][grid.best_index_]
-    print(f'Best: {grid.best_score_:0.3f} +/- {std / 2:0.3f}')
+    sd = grid.cv_results_['std_test_score'][grid.best_index_]
+    print(f'Best: {grid.best_score_:0.3f} +/- {sd:0.3f}')
     for key, value in grid.best_params_.items():
         print(f'{key}: {value}')
 
@@ -298,10 +298,10 @@ def get_ct_v5():
 
 
 def get_Xy_v1(filename='./data/train.csv'):
-    """Data Encoding for Iteration 1
+    """Data Encoding
 
     Version 1
-    * Pclass, Fare, and Sex encoded as 1/0 for female/male
+    * Pclass and Sex encoded as 1/0
     """
 
     # read data
@@ -321,11 +321,11 @@ def get_Xy_v1(filename='./data/train.csv'):
 
 
 def get_Xy_v2(filename='./data/train.csv'):
-    """Data Encoding for Iteration 2
+    """Data Encoding
 
-    Version
-    * v1: Pclass, Sex encoded as 1/0 for female/male
-    * v2 add: Age, Fare, SibSp, Parch
+    Version 2
+    * Pclass and Sex encoded as 1/0
+    * Age, Fare, SibSp, Parch
     """
 
     # read data
@@ -345,11 +345,11 @@ def get_Xy_v2(filename='./data/train.csv'):
 
 
 def get_Xy_v3(filename='./data/train.csv'):
-    """Data Encoding for Iteration 3
+    """Data Encoding
 
     Version 3
-    * Pclass, Fare, and Sex encoded as 1/0 for female/male
-    * SibSp, Parch
+    * Pclass and Sex encoded as 1/0
+    * Age, Fare, SibSp, Parch
     * family_size, is_cabin_notnull, is_large_family
     * is_child, is_boy, is_sibsp_zero, is_parch_zero
     """
@@ -381,11 +381,11 @@ def get_Xy_v3(filename='./data/train.csv'):
 
 
 def get_Xy_v4(filename='./data/train.csv'):
-    """Data Encoding for Iteration 4
+    """Data Encoding
 
     Version 4
-    * Pclass, Fare, and Sex encoded as 1/0 for female/male
-    * SibSp, Parch
+    * Pclass and Sex encoded as 1/0
+    * Age, Fare, SibSp, Parch
     * family_size, is_cabin_notnull, is_large_family
     * is_child, is_boy, is_sibsp_zero, is_parch_zero
     * extract Title and dummy encode it
@@ -431,11 +431,11 @@ def get_Xy_v4(filename='./data/train.csv'):
 
 
 def get_Xy_v5(filename='./data/train.csv'):
-    """Data Encoding for Iteration 5
+    """Data Encoding
 
-    Version 5 -- Simplified
-    * Pclass, Fare, and Sex encoded as 1/0 for female/male
-    * family_size, is_cabin_notnull
+    Version 5 -- Reduced set of features
+    * Pclass and Sex encoded as 1/0
+    * Age, Fare
     * extract Title and dummy encode it
     * dummy encode Embarked
     """
@@ -463,7 +463,7 @@ def get_Xy_v5(filename='./data/train.csv'):
     X = pd.concat([X, dummy_embarked, dummy_title], axis=1)
 
     # drop unused columns
-    drop_columns = ['PassengerId', 'Name', 'SibSp', 'Parch',
+    drop_columns = ['PassengerId', 'Name', 'title', 'SibSp', 'Parch',
                     'Ticket', 'Embarked', 'Cabin']
     X = X.drop(drop_columns, axis=1)
     
@@ -471,9 +471,11 @@ def get_Xy_v5(filename='./data/train.csv'):
 
 
 def get_Xy_v6(filename='./data/train.csv'):
-    """Data Encoding for Iteration 4
+    """Data Encoding
 
-    Same as previous version, except encode 3rd class as the number 4.
+    Version 5
+    * same as version 4 except encode 3rd class as the number 4
+    * to better reflect the added difficultly of being in 3rd class
     """
 
     def extract_title(x):
@@ -505,3 +507,33 @@ def get_Xy_v6(filename='./data/train.csv'):
     X = X.drop(drop_columns, axis=1)
 
     return X, y
+
+def get_ct_bycolumn(cols):
+    """Column Transform for Features
+
+    """
+
+    ii = WrappedIterativeImputer('Age')
+
+    # Pipelines
+    ii_pipe = Pipeline([('ii', ii)])
+
+    # Columns to act on
+    ii_cols = ['Pclass', 'Sex', 'Age', 'Title_Master',
+                  'Title_Miss', 'Title_Mr', 'Title_Mrs', 'Title_Other']
+
+    if 'Age' in cols:
+        # cols.remove is an inplace operation
+        # which operates on a reference
+        cols = cols.copy()
+        cols.remove('Age')
+        transformers = [('ii_tr', ii_pipe, ii_cols),
+                        ('as_is', 'passthrough', cols)]
+        return_cols = ['Age'] + cols
+    else:
+        transformers = [('as_is', 'passthrough', cols)]
+        return_cols = cols
+
+    ct = ColumnTransformer(transformers=transformers)
+
+    return return_cols, ct
