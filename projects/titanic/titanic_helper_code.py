@@ -463,7 +463,7 @@ def get_Xy_v5(filename='./data/train.csv'):
     X = pd.concat([X, dummy_embarked, dummy_title], axis=1)
 
     # drop unused columns
-    drop_columns = ['PassengerId', 'Name', 'title', 'SibSp', 'Parch',
+    drop_columns = ['PassengerId', 'Name', 'SibSp', 'Parch',
                     'Ticket', 'Embarked', 'Cabin']
     X = X.drop(drop_columns, axis=1)
     
