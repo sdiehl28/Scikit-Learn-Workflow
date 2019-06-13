@@ -61,25 +61,31 @@ def get_ct_v1():
     # To impute age
     si = SimpleImputer()
 
+    # quantize fare to below/above median
+    kbin = KBinsDiscretizer(n_bins=2, encode='ordinal', strategy='quantile')
+
     # Pipelines
     ss_pipe = Pipeline([('ss', ss)])
     ss_si_pipe = Pipeline([('ss', ss), ('si', si)])
+    kbin_pipe = Pipeline([('kbin', kbin)])
 
     # Columns to act on
     ss_cols = ['Pclass', 'SibSp', 'Parch', 'Fare', 'family_size']
     ss_si_cols = ['Age']
+    kbin_cols = ['Fare']
     bool_cols = ['Sex', 'is_cabin_notnull', 'is_large_family', 'is_child', 
                  'is_sibsp_zero', 'is_parch_zero', 'is_boy']
 
     transformers = [('ss_tr', ss_pipe, ss_cols),
                     ('ss_si_tr', ss_si_pipe, ss_si_cols),
+                    ('kbin_tr', kbin_pipe, kbin_cols),
                     ('as_is', 'passthrough', bool_cols)]
 
     ct = ColumnTransformer(transformers=transformers)
 
     # there is no way to access the columns by name from a pipe
     # create a list of columns to keep track
-    cols = ss_cols + ss_si_cols + bool_cols
+    cols = ss_cols + ss_si_cols + ['is_fare_high'] + bool_cols
 
     return cols, ct
 
