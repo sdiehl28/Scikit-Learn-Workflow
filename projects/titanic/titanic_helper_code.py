@@ -93,7 +93,7 @@ def get_ct_v1():
 class WrappedIterativeImputer(BaseEstimator, TransformerMixin):
     """Wrap IterativeImputer to return One Column Only
 
-    The name of the column to be kept is passed to the constructor.
+    The name of the column to be imputed is passed to the constructor.
 
     This must be the first step in a pipe, as it relies on X being a Pandas DataFrame"""
 
