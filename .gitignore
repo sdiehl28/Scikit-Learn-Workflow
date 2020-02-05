@@ -3,3 +3,4 @@ DSML*
 *tmp.ipynb
 dask-worker-space
 __pycache__
+tmp*
